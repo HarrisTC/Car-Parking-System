@@ -1,29 +1,47 @@
-# Sweep
-
-Sweeps the shaft of a RC [servo motor](http://en.wikipedia.org/wiki/Servo_motor#RC_servos) back and forth across 180 degrees.
-
-## Hardware Required
-
-* Arduino Board
-* Servo Motor
-* Hook-up wires
-
-## Circuit
-
-Servo motors have three wires: power, ground, and signal. The power wire is typically red, and should be connected to the 5V pin on the Arduino board. The ground wire is typically black or brown and should be connected to a ground pin on the board. The signal pin is typically yellow, orange or white and should be connected to pin 9 on the board.
-
-![](images/sweep_bb.png)
-
-(Images developed using Fritzing. For more circuit examples, see the [Fritzing project page](http://fritzing.org/projects/))
-
-## Schematic
-
-![](images/sweep_schem.png)
-
-## See also
-
-* [attach()](/docs/api.md#attach)
-* [write()](/docs/api.md#write)
-* [map()](https://www.arduino.cc/en/Reference/Map)
-* [Servo library reference](/docs/readme.md)
-* [Knob](../Knob) - Control the position of a servo with a potentiometer
+  // Look for new cards
+  if ( ! mfrc522.PICC_IsNewCardPresent()) 
+  {
+    return;
+  }
+  // Select one of the cards
+  if ( ! mfrc522.PICC_ReadCardSerial()) 
+  {
+    return;
+  }
+  //Show UID on serial monitor
+  Serial.print("UID tag :");
+  String content= "";
+  byte letter;
+  for (byte i = 0; i < mfrc522.uid.size; i++) 
+  {
+     Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+     Serial.print(mfrc522.uid.uidByte[i], HEX);
+     content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
+     content.concat(String(mfrc522.uid.uidByte[i], HEX));
+  }
+  Serial.println();
+  Serial.print("Message : ");
+  content.toUpperCase();
+  if (content.substring(1) == "CB 50 6F C5"|| content.substring(1) == "4A BA C6 23") //change here the UID of the card/cards that you want to give access
+  {
+    Serial.println("Authorized access");
+    Serial.println();
+    delay(500);
+    digitalWrite(LED_G, HIGH);
+    tone(BUZZER, 500);
+    delay(300);
+    noTone(BUZZER);
+    myServo.write(180);
+    delay(3000);
+    myServo.write(0);
+    digitalWrite(LED_G, LOW);
+  }
+ 
+ else   {
+    Serial.println(" Access denied");
+    digitalWrite(LED_R, HIGH);
+    tone(BUZZER, 300);
+    delay(1000);
+    digitalWrite(LED_R, LOW);
+    noTone(BUZZER);
+  }
