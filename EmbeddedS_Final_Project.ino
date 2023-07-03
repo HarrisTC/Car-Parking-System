@@ -2,11 +2,14 @@
 #include <Wire.h> 
 #include <Servo.h>
 
+#define VCC2 5  // define new vcc pin
+#define GND2 2  // define new gnd pin
+
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 Servo myservo;  // create servo object to control a servo
 
 int pos = 0;    // variable to store the servo position
-int ir = 3;     // ir pin
+int ir = 7;     // ir pin
 int x;          // ir value
 int flag = 0;   // check ir status
 
@@ -26,10 +29,18 @@ void GoodBye(){
 
 void setup() {
   Serial.begin(9600);
-  myservo.attach(5);  // attaches the servo on pin 9 to the servo object
-  pinMode(3,INPUT);   // pin 3 to ir value
-  lcd.init();
+
+  lcd.init();       // lcd setup
   lcd.backlight();
+  
+  myservo.attach(6);  // attaches the servo on pin 6 to the servo object
+  pinMode(ir,INPUT);   // pin 7 to ir value
+  
+  pinMode(VCC2,OUTPUT);  // define a digital pin as output
+  digitalWrite(VCC2,HIGH);  // set the above pin as high
+
+  pinMode(GND2,OUTPUT);  // define a digital pin as output
+  digitalWrite(GND2,LOW);  // set the above pin as low
 }
 
 void loop() {
@@ -42,6 +53,7 @@ void loop() {
   if( x==0 && flag==0 ) {
     flag=1;
     GoodBye();
+    delay(200);
     for (pos = 90; pos >= 0; pos -= 1) { 
       myservo.write(pos);             
       delay(10);                   
