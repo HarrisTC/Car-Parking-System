@@ -10,7 +10,7 @@
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 
 #define VCC2 5  // define new vcc pin
-#define GND2 2  // define new gnd pin
+#define GND2 4  // define new gnd pin
 
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 Servo myservo;  // create servo object to control a servo
@@ -75,11 +75,29 @@ void setup() {
 
   pinMode(GND2,OUTPUT);  // define a digital pin as output
   digitalWrite(GND2,LOW);  // set the above pin as low
+
   Serial.println("Put your card to the reader...");
   Serial.println();
 }
 
 void loop() {
+
+//EXIT GATE
+  x = digitalRead(ir);  // ir value
+  //Open the gate
+  if( x==0 && flag==0 ) {
+    flag=1;
+    GoodBye();
+    delay(200);
+    Open();
+  }
+  //Close the gate
+  if( x==1 && flag==1 ){
+    flag=0;
+    delay(2500);
+    Greeting();
+    Close();
+  }
 
 //OPEN GATE
   // Look for new cards
@@ -106,7 +124,7 @@ void loop() {
   Serial.println();
   Serial.print("Message : ");
   content.toUpperCase();
-  if (content.substring(1) == "23 7A 69 04"|| content.substring(1) == "4A BA C6 23") //change here the UID of the card/cards that you want to give access
+  if (content.substring(1) == "23 7A 69 04"|| content.substring(1) == "E3 B1 20 00") //change here the UID of the card/cards that you want to give access
   {
     Serial.println("Authorized access");
     Serial.println();
@@ -122,23 +140,5 @@ void loop() {
     WrongCard();
   }
 
-
-//EXIT GATE
-  // The Exit with IR Sensor
-  x = digitalRead(ir);
-  //Open the gate
-  if( x==0 && flag==0 ) {
-    flag=1;
-    GoodBye();
-    delay(200);
-    Open();
-  }
-  //Close the gate
-  if( x==1 && flag==1 ){
-    flag=0;
-    delay(2500);
-    Greeting();
-    Close();
-  }
   delay(300);
 }
