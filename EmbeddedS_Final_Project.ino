@@ -4,22 +4,28 @@
 #include <SPI.h>
 #include <MFRC522.h>
 
-#define RST_PIN         9           // Configurable, see typical pin layout above
-#define SS_PIN          10          // Configurable, see typical pin layout above
+#define RST_PIN  9    // Configurable, see typical pin layout above
+#define SS_PIN   10   // Configurable, see typical pin layout above
+#define ir_close A0   // ir pin close gate
+#define ir_open  7    // ir pin open gate
+
+#define VCC_RFID     5    // define new vcc for ir open gate pin
+#define GND_RFID     4    // define new gnd for ir open gate pin
+#define VCC_IR_CLOSE A2   // define new vcc for ir close gate pin
+#define GND_IR_CLOSE A1   // define new gnd for ir close gate pin
+#define GND_IR_OPEN  8    // define new gnd for ir open gate pin
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
-
-#define VCC2 5  // define new vcc pin
-#define GND2 4  // define new gnd pin
-
-LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
-Servo myservo;  // create servo object to control a servo
+LiquidCrystal_I2C lcd(0x27,16,2);   // set the LCD address to 0x27 for a 16 chars and 2 line display
+Servo openGate, closeGate;   // create servo object to control a servo
 
 int pos = 0;    // variable to store the servo position
-int ir = 7;     // ir pin
-int x=1;          // ir value
-int flag = 0;   // check ir status
+int x_open = 1;   // ir open value
+int x_close = 1;  // ir close value
+int flag_open = 0;   // check ir open status
+int flag_close = 0;  // check ir close status
 
+// Print to LCD to greet the vehicle coming in the park
 void Greeting(){
   lcd.clear();
   lcd.setCursor(0,0);
@@ -28,14 +34,7 @@ void Greeting(){
   lcd.print("Have a good day.");
 }
 
-void GoodBye(){
-  lcd.clear();
-  lcd.setCursor(4,0);
-  lcd.print("Goodbye");
-  lcd.setCursor(1,1);
-  lcd.print("See you again.");
-}
-
+// Print to LCD to notify the vehicle using wrong card 
 void WrongCard(){
   lcd.clear();
   lcd.setCursor(2,0);
@@ -44,14 +43,16 @@ void WrongCard(){
   lcd.print("Use another card!");
 }
 
-void Open(){
+// Open the gate
+void Open(Servo myservo){
   for (pos = 90; pos >= 0; pos -= 1) { 
     myservo.write(pos);             
     delay(10);                   
   }
 }
 
-void Close(){
+// Close the gate
+void Close(Servo myservo){
   for (pos = 0; pos <= 90; pos += 1) { 
     myservo.write(pos);             
     delay(10);                    
@@ -66,40 +67,55 @@ void setup() {
   lcd.init();       // lcd setup
   lcd.backlight();
   
-  myservo.attach(6);  // attaches the servo on pin 6 to the servo object
-  myservo.write(90);  //servo start position
-  pinMode(ir,INPUT);   // pin 7 to ir value
-  
-  pinMode(VCC2,OUTPUT);  // define a digital pin as output
-  digitalWrite(VCC2,HIGH);  // set the above pin as high
+  closeGate.attach(6);  // attaches the servo on pin 6 to the servo object
+  closeGate.write(90);  // servo at close start position
+  openGate.attach(3);   // attaches the servo on pin 3 to the servo object
+  openGate.write(90);   // servo at open start position
 
-  pinMode(GND2,OUTPUT);  // define a digital pin as output
-  digitalWrite(GND2,LOW);  // set the above pin as low
+  pinMode(ir_close,INPUT);  // pin 7 to ir value
+  pinMode(ir_open,INPUT);   // pin 8 to ir value
+
+  pinMode(VCC_RFID,OUTPUT);  // define a digital pin as output
+  digitalWrite(VCC_RFID,HIGH);  // set the above pin as high
+  pinMode(GND_RFID,OUTPUT);  // define a digital pin as output
+  digitalWrite(GND_RFID,LOW);  // set the above pin as low
+  pinMode(VCC_IR_CLOSE,OUTPUT);  // define a digital pin as output
+  digitalWrite(VCC_IR_CLOSE,HIGH);  // set the above pin as high
+  pinMode(GND_IR_CLOSE,OUTPUT);  // define a digital pin as output
+  digitalWrite(GND_IR_CLOSE,LOW);  // set the above pin as low
+  pinMode(GND_IR_OPEN,OUTPUT);  // define a digital pin as output
+  digitalWrite(GND_IR_OPEN,LOW);  // set the above pin as low
 
   Serial.println("Put your card to the reader...");
   Serial.println();
 }
 
 void loop() {
+  // Check if the open gate haven't closed since the vehicle passed
+  if( x_open==1 && flag_open==1 && openGate.read()==0){
+    flag_open=0;
+    delay(500);
+    Close(openGate);
+  }
 
-//EXIT GATE
-  x = digitalRead(ir);  // ir value
-  //Open the gate
-  if( x==0 && flag==0 ) {
-    flag=1;
-    GoodBye();
+// EXIT GATE
+  x_close = digitalRead(ir_close);  // ir close value
+  // Open the gate
+  if( x_close==0 && flag_close==0 ) {
+    flag_close=1;
     delay(200);
-    Open();
+    Open(closeGate);
   }
-  //Close the gate
-  if( x==1 && flag==1 ){
-    flag=0;
+  // Close the gate
+  if( x_close==1 && flag_close==1 ){
+    flag_close=0;
     delay(2500);
-    Greeting();
-    Close();
+    Close(closeGate);
   }
 
-//OPEN GATE
+
+// OPEN GATE
+  x_open = digitalRead(ir_open);  // ir open value
   // Look for new cards
   if ( ! mfrc522.PICC_IsNewCardPresent()) 
   {
@@ -110,7 +126,7 @@ void loop() {
   {
     return;
   }
-  //Show UID on serial monitor
+  // Show UID on serial monitor
   Serial.print("UID tag :");
   String content= "";
   byte letter;
@@ -124,21 +140,20 @@ void loop() {
   Serial.println();
   Serial.print("Message : ");
   content.toUpperCase();
-  if (content.substring(1) == "23 7A 69 04"|| content.substring(1) == "E3 B1 20 00") //change here the UID of the card/cards that you want to give access
-  {
-    Serial.println("Authorized access");
-    Serial.println();
-    Greeting();
-    Open();
-    delay(4000);
-    Close();
-    delay(500);
+  if (content.substring(1) == "23 7A 69 04"|| content.substring(1) == "E3 B1 20 00") { //change here the UID of the cards that you want to give access
+    if(x_open==0 && flag_open==0){
+      flag_open=1;
+      Serial.println("Authorized access");
+      Serial.println();
+      Greeting();
+      Open(openGate);
+      delay(500);
+    }
   }
- 
-  else   {
+  else {
     Serial.println(" Access denied");
     WrongCard();
   }
-
+  
   delay(300);
 }
