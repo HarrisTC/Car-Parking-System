@@ -94,7 +94,7 @@ void loop() {
   // Check if the open gate haven't closed since the vehicle passed
   if( x_open==1 && flag_open==1 && openGate.read()==0){
     flag_open=0;
-    delay(500);
+    delay(1000);
     Close(openGate);
   }
 
@@ -109,7 +109,7 @@ void loop() {
   // Close the gate
   if( x_close==1 && flag_close==1 ){
     flag_close=0;
-    delay(2500);
+    delay(2000);
     Close(closeGate);
   }
 
