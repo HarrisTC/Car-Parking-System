@@ -106,6 +106,8 @@ void loop() {
     flag_open=0;
     delay(1000);
     Close(openGate);
+    delay(300);
+    Default();  // print default line to LCD
   }
 
 // EXIT GATE
@@ -159,11 +161,14 @@ void loop() {
       Greeting();  // Print greeting line to LCD
       Open(openGate);   // Open the open gate
       delay(500);
+      Default();  // print default line to LCD
     }
   }
   else {
     Serial.println(" Access denied");
     WrongCard();  // Print wrong card line to LCD
+    delay(300);
+    Default();  // print default line to LCD
   }
   
   delay(300);
