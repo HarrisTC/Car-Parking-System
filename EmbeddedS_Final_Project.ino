@@ -25,8 +25,17 @@ int x_close = 1;  // ir close value
 int flag_open = 0;   // check ir open status
 int flag_close = 0;  // check ir close status
 
+// Print to LCD default line
+void Default(){
+  lcd.clear();
+  lcd.setCursor(5,0);
+  lcd.print("Hello");
+  lcd.setCursor(2,1);
+  lcd.print("Welcome home");
+}
+
 // Print to LCD to greet the vehicle coming in the park
-void Greeting(){
+void Greeting() {
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("Welcome!");
@@ -35,7 +44,7 @@ void Greeting(){
 }
 
 // Print to LCD to notify the vehicle using wrong card 
-void WrongCard(){
+void WrongCard() {
   lcd.clear();
   lcd.setCursor(2,0);
   lcd.print("Wrong Card!");
@@ -44,7 +53,7 @@ void WrongCard(){
 }
 
 // Open the gate
-void Open(Servo myservo){
+void Open(Servo myservo) {
   for (pos = 90; pos >= 0; pos -= 1) { 
     myservo.write(pos);             
     delay(10);                   
@@ -52,7 +61,7 @@ void Open(Servo myservo){
 }
 
 // Close the gate
-void Close(Servo myservo){
+void Close(Servo myservo) {
   for (pos = 0; pos <= 90; pos += 1) { 
     myservo.write(pos);             
     delay(10);                    
@@ -86,13 +95,14 @@ void setup() {
   pinMode(GND_IR_OPEN,OUTPUT);  // define a digital pin as output
   digitalWrite(GND_IR_OPEN,LOW);  // set the above pin as low
 
+  Default();  // print default line to LCD
   Serial.println("Put your card to the reader...");
   Serial.println();
 }
 
 void loop() {
   // Check if the open gate haven't closed since the vehicle passed
-  if( x_open==1 && flag_open==1 && openGate.read()==0){
+  if( x_open==1 && flag_open==1 && openGate.read()==0 ) {
     flag_open=0;
     delay(1000);
     Close(openGate);
@@ -107,7 +117,7 @@ void loop() {
     Open(closeGate);
   }
   // Close the gate
-  if( x_close==1 && flag_close==1 ){
+  if( x_close==1 && flag_close==1 ) {
     flag_close=0;
     delay(2000);
     Close(closeGate);
@@ -116,43 +126,44 @@ void loop() {
 
 // OPEN GATE
   x_open = digitalRead(ir_open);  // ir open value
+  
   // Look for new cards
-  if ( ! mfrc522.PICC_IsNewCardPresent()) 
-  {
+  if ( ! mfrc522.PICC_IsNewCardPresent()) {
     return;
   }
   // Select one of the cards
-  if ( ! mfrc522.PICC_ReadCardSerial()) 
-  {
+  if ( ! mfrc522.PICC_ReadCardSerial()) {
     return;
   }
   // Show UID on serial monitor
   Serial.print("UID tag :");
-  String content= "";
-  byte letter;
+  String content= "";  // UID of new card
+
   for (byte i = 0; i < mfrc522.uid.size; i++) 
   {
-     Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-     Serial.print(mfrc522.uid.uidByte[i], HEX);
-     content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
-     content.concat(String(mfrc522.uid.uidByte[i], HEX));
+    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+    Serial.print(mfrc522.uid.uidByte[i], HEX);
+    content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
+    content.concat(String(mfrc522.uid.uidByte[i], HEX));
   }
   Serial.println();
   Serial.print("Message : ");
   content.toUpperCase();
+
+  // Check UID of vehicle's card
   if (content.substring(1) == "23 7A 69 04"|| content.substring(1) == "E3 B1 20 00") { //change here the UID of the cards that you want to give access
-    if(x_open==0 && flag_open==0){
+    if( x_open==0 && flag_open==0 ) {
       flag_open=1;
       Serial.println("Authorized access");
       Serial.println();
-      Greeting();
-      Open(openGate);
+      Greeting();  // Print greeting line to LCD
+      Open(openGate);   // Open the open gate
       delay(500);
     }
   }
   else {
     Serial.println(" Access denied");
-    WrongCard();
+    WrongCard();  // Print wrong card line to LCD
   }
   
   delay(300);
