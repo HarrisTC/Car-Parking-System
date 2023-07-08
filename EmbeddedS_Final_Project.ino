@@ -101,13 +101,17 @@ void setup() {
 }
 
 void loop() {
+  // Print to LCD default line when there isn't any vehicle at the open gate
+  if( x_open==1 ) {
+    Default();  // print default line to LCD
+  }
   // Check if the open gate haven't closed since the vehicle passed
   if( x_open==1 && flag_open==1 && openGate.read()==0 ) {
     flag_open=0;
     delay(1000);
     Close(openGate);
-    delay(300);
-    Default();  // print default line to LCD
+    // delay(300);
+    // Default();  // print default line to LCD
   }
 
 // EXIT GATE
@@ -137,6 +141,9 @@ void loop() {
   if ( ! mfrc522.PICC_ReadCardSerial()) {
     return;
   }
+  if (mfrc522.PICC_IsNewCardPresent()) {
+    Default();  // print default line to LCD
+  }
   // Show UID on serial monitor
   Serial.print("UID tag :");
   String content= "";  // UID of new card
@@ -151,7 +158,7 @@ void loop() {
   Serial.println();
   Serial.print("Message : ");
   content.toUpperCase();
-
+  if( content == "") Default();  // print default line to LCD
   // Check UID of vehicle's card
   if (content.substring(1) == "23 7A 69 04"|| content.substring(1) == "E3 B1 20 00") { //change here the UID of the cards that you want to give access
     if( x_open==0 && flag_open==0 ) {
@@ -160,15 +167,11 @@ void loop() {
       Serial.println();
       Greeting();  // Print greeting line to LCD
       Open(openGate);   // Open the open gate
-      delay(500);
-      Default();  // print default line to LCD
     }
   }
   else {
     Serial.println(" Access denied");
     WrongCard();  // Print wrong card line to LCD
-    delay(300);
-    Default();  // print default line to LCD
   }
   
   delay(300);
