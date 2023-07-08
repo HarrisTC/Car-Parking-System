@@ -158,7 +158,7 @@ void loop() {
   Serial.println();
   Serial.print("Message : ");
   content.toUpperCase();
-  if( content == "") Default();  // print default line to LCD
+  
   // Check UID of vehicle's card
   if (content.substring(1) == "23 7A 69 04"|| content.substring(1) == "E3 B1 20 00") { //change here the UID of the cards that you want to give access
     if( x_open==0 && flag_open==0 ) {
