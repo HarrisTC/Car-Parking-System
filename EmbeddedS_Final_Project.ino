@@ -4,8 +4,10 @@
 #include <SPI.h>
 #include <MFRC522.h>
 
-#define RST_PIN  9    // Configurable, see typical pin layout above
-#define SS_PIN   10   // Configurable, see typical pin layout above
+#define MAX_SLOT 3    // Max capacity of the car park
+
+#define RST_PIN  9    // Pin RST for MFRC522
+#define SS_PIN   10   // Pin SS for MFRC522
 #define ir_close A0   // ir pin close gate
 #define ir_open  7    // ir pin open gate
 
@@ -19,6 +21,7 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 LiquidCrystal_I2C lcd(0x27,16,2);   // set the LCD address to 0x27 for a 16 chars and 2 line display
 Servo openGate, closeGate;   // create servo object to control a servo
 
+int slot;   // number of slot in present
 int pos = 0;    // variable to store the servo position
 int x_open = 1;   // ir open value
 int x_close = 1;  // ir close value
@@ -28,8 +31,8 @@ int flag_close = 0;  // check ir close status
 // Print to LCD default line
 void Default(){
   lcd.clear();
-  lcd.setCursor(5,0);
-  lcd.print("Hello");
+  lcd.setCursor(2,0);
+  lcd.print("Hello World!");
   lcd.setCursor(2,1);
   lcd.print("Welcome home");
 }
@@ -37,7 +40,7 @@ void Default(){
 // Print to LCD to greet the vehicle coming in the park
 void Greeting() {
   lcd.clear();
-  lcd.setCursor(0,0);
+  lcd.setCursor(4,0);
   lcd.print("Welcome!");
   lcd.setCursor(0,1);
   lcd.print("Have a good day.");
@@ -50,6 +53,15 @@ void WrongCard() {
   lcd.print("Wrong Card!");
   lcd.setCursor(0,1);
   lcd.print("Use another card!");
+}
+
+// Print to LCD to notify that the car park is full
+void FullPark(){
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("The park is full");
+  lcd.setCursor(2,1);
+  lcd.print("Come later!");
 }
 
 // Open the gate
@@ -70,6 +82,7 @@ void Close(Servo myservo) {
 
 void setup() {
   Serial.begin(9600);
+  slot = 0;
   SPI.begin();      // Initiate  SPI bus
   mfrc522.PCD_Init();   // Initiate MFRC522
 
@@ -105,6 +118,7 @@ void loop() {
   if( x_open==1 ) {
     Default();  // print default line to LCD
   }
+
   // Check if the open gate haven't closed since the vehicle passed
   if( x_open==1 && flag_open==1 && openGate.read()==0 ) {
     flag_open=0;
@@ -112,10 +126,12 @@ void loop() {
     Close(openGate);
     // delay(300);
     // Default();  // print default line to LCD
+    slot++;
   }
 
 // EXIT GATE
   x_close = digitalRead(ir_close);  // ir close value
+  
   // Open the gate
   if( x_close==0 && flag_close==0 ) {
     flag_close=1;
@@ -125,6 +141,8 @@ void loop() {
   // Close the gate
   if( x_close==1 && flag_close==1 ) {
     flag_close=0;
+    slot--;
+    if(slot < 0) slot = 0;
     delay(2000);
     Close(closeGate);
   }
@@ -161,12 +179,17 @@ void loop() {
   
   // Check UID of vehicle's card
   if (content.substring(1) == "23 7A 69 04"|| content.substring(1) == "E3 B1 20 00") { //change here the UID of the cards that you want to give access
-    if( x_open==0 && flag_open==0 ) {
-      flag_open=1;
-      Serial.println("Authorized access");
-      Serial.println();
-      Greeting();  // Print greeting line to LCD
-      Open(openGate);   // Open the open gate
+    if(slot < MAX_SLOT) {
+      if( x_open==0 && flag_open==0 ) {
+        flag_open=1;
+        Serial.println("Authorized access");
+        Serial.println();
+        Greeting();  // Print greeting line to LCD
+        Open(openGate);   // Open the open gate
+      }
+    }
+    if(slot == MAX_SLOT) {
+      FullPark();
     }
   }
   else {
