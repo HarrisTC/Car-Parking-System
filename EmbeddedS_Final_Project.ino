@@ -21,12 +21,12 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 LiquidCrystal_I2C lcd(0x27,16,2);   // set the LCD address to 0x27 for a 16 chars and 2 line display
 Servo openGate, closeGate;   // create servo object to control a servo
 
-int slot;   // number of slot in present
-int pos = 0;    // variable to store the servo position
-int x_open = 1;   // ir open value
-int x_close = 1;  // ir close value
+int slot;            // number of slot in present
+int pos = 0;         // variable to store the servo position
+int x_open = 1;      // ir open value
+int x_close = 1;     // ir close value
 int flag_open = 0;   // check ir open status
-int flag_close = 0;  // check ir close status
+int flag_close = 0;  // check ir close status 
 
 // Print to LCD default line
 void Default(){
@@ -83,7 +83,7 @@ void Close(Servo myservo) {
 void setup() {
   Serial.begin(9600);
   slot = 0;
-  SPI.begin();      // Initiate  SPI bus
+  SPI.begin();          // Initiate  SPI bus
   mfrc522.PCD_Init();   // Initiate MFRC522
 
   lcd.init();       // lcd setup
@@ -97,16 +97,17 @@ void setup() {
   pinMode(ir_close,INPUT);  // pin 7 to ir value
   pinMode(ir_open,INPUT);   // pin 8 to ir value
 
-  pinMode(VCC_RFID,OUTPUT);  // define a digital pin as output
+  pinMode(VCC_RFID,OUTPUT);     // define a digital pin as output
   digitalWrite(VCC_RFID,HIGH);  // set the above pin as high
-  pinMode(GND_RFID,OUTPUT);  // define a digital pin as output
-  digitalWrite(GND_RFID,LOW);  // set the above pin as low
-  pinMode(VCC_IR_CLOSE,OUTPUT);  // define a digital pin as output
+  pinMode(GND_RFID,OUTPUT);     // define a digital pin as output
+  digitalWrite(GND_RFID,LOW);   // set the above pin as low
+  
+  pinMode(VCC_IR_CLOSE,OUTPUT);     // define a digital pin as output
   digitalWrite(VCC_IR_CLOSE,HIGH);  // set the above pin as high
-  pinMode(GND_IR_CLOSE,OUTPUT);  // define a digital pin as output
-  digitalWrite(GND_IR_CLOSE,LOW);  // set the above pin as low
-  pinMode(GND_IR_OPEN,OUTPUT);  // define a digital pin as output
-  digitalWrite(GND_IR_OPEN,LOW);  // set the above pin as low
+  pinMode(GND_IR_CLOSE,OUTPUT);     // define a digital pin as output
+  digitalWrite(GND_IR_CLOSE,LOW);   // set the above pin as low
+  pinMode(GND_IR_OPEN,OUTPUT);      // define a digital pin as output
+  digitalWrite(GND_IR_OPEN,LOW);    // set the above pin as low
 
   Default();  // print default line to LCD
   Serial.println("Put your card to the reader...");
@@ -168,8 +169,6 @@ void loop() {
 
   for (byte i = 0; i < mfrc522.uid.size; i++) 
   {
-    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-    Serial.print(mfrc522.uid.uidByte[i], HEX);
     content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
     content.concat(String(mfrc522.uid.uidByte[i], HEX));
   }
@@ -178,12 +177,10 @@ void loop() {
   content.toUpperCase();
   
   // Check UID of vehicle's card
-  if (content.substring(1) == "23 7A 69 04"|| content.substring(1) == "E3 B1 20 00") { //change here the UID of the cards that you want to give access
+  if (content.substring(1) == "23 7A 69 04" || content.substring(1) == "E3 B1 20 00" || content.substring(1) == "A4 72 C7 AA") { //change here the UID of the cards that you want to give access
     if(slot < MAX_SLOT) {
       if( x_open==0 && flag_open==0 ) {
         flag_open=1;
-        Serial.println("Authorized access");
-        Serial.println();
         Greeting();  // Print greeting line to LCD
         Open(openGate);   // Open the open gate
       }
@@ -193,7 +190,6 @@ void loop() {
     }
   }
   else {
-    Serial.println(" Access denied");
     WrongCard();  // Print wrong card line to LCD
   }
   
